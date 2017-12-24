@@ -157,7 +157,7 @@ def fill_left(im, bound, k=200):
     return im
 
 
-def fill_right(im, bound, k):
+def fill_right(im, bound, k=200):
     ST = time.time()
     black_edge = detect(im[:, -1, 0])
     cnt = 0
