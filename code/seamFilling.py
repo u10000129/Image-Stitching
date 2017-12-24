@@ -1,12 +1,8 @@
 import cv2
 import numpy as np
 import time
-import imutils
-from utils import im2float, normalize
 
 # function calculate energy
-
-
 def energy(I):
     def energy_grey(grey):
         # sobel filters
