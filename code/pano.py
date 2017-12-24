@@ -112,7 +112,7 @@ if __name__ == '__main__':
 	try:
 		args = sys.argv[1]
 	except:
-		args = "txtlists/files1.txt"
+		args = "txtlists/files3.txt"
 	finally:
 		print ("Parameters : ", args)
 	s = Stitch(args)

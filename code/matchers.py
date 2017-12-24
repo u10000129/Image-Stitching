@@ -17,7 +17,7 @@ class matchers:
 			imageSet2['des'],
 			imageSet1['des'],
 			k=2
-			)
+		)
 		good = []
 		for i , (m, n) in enumerate(matches):
 			if m.distance < 0.7*n.distance:
@@ -32,7 +32,7 @@ class matchers:
 			)
 			matchedPointsPrev = np.float32(
 				[pointsPrevious[i].pt for (i, __) in good]
-				)
+			)
 
 			H, s = cv2.findHomography(matchedPointsCurrent, matchedPointsPrev, cv2.RANSAC, 4)
 			return H
