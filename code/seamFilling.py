@@ -114,7 +114,7 @@ def fill_up(im, bound, k=200):
             _im = seamFilling(_im, s, is_vertical=False)
             im[:bound[0] - 1, :, :] = im[1:bound[0], :, :]
             im[bound[0] - 1:bound[1], beg:end, :] = _im
-        print(cnt)
+        # print(cnt)
         cnt += 1
         black_edge = detect(im[0, :, 0])
     print('%f(sec)' % (time.time() - ST))
@@ -132,7 +132,7 @@ def fill_down(im, bound, k=200):
             _im = seamFilling(_im, s, is_vertical=False)
             im[bound[1] + 1:, :, :] = im[bound[1]:-1, :, :]
             im[bound[0]:bound[1] + 1, beg:end, :] = _im
-        print(cnt)
+        # print(cnt)
         cnt += 1
         black_edge = detect(im[-1, :, 0])
     print('%f(sec)' % (time.time() - ST))
@@ -150,7 +150,7 @@ def fill_left(im, bound, k=200):
             _im = seamFilling(_im, s, is_vertical=True)
             im[:, :bound[0] - 1, :] = im[:, 1:bound[0], :]
             im[beg:end, bound[0] - 1:bound[1], :] = _im
-        print(cnt)
+        # print(cnt)
         cnt += 1
         black_edge = detect(im[:, 0, 0])
     print('%f(sec)' % (time.time() - ST))
@@ -168,7 +168,7 @@ def fill_right(im, bound, k=200):
             _im = seamFilling(_im, s, is_vertical=True)
             im[:, bound[1] + 1:, :] = im[:, bound[1]:-1, :]
             im[beg:end, bound[0]:bound[1] + 1, :] = _im
-        print(cnt)
+        # print(cnt)
         cnt += 1
         black_edge = detect(im[:, -1, 0])
     print('%f(sec)' % (time.time() - ST))
