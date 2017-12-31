@@ -19,10 +19,49 @@ def homograpghy(src_pts, dst_pts, threshold):
             masked_srcpts.append(src_pts[i])
             masked_dstpts.append(dst_pts[i])
 
-    #homo = __solvehomo(masked_srcpts, masked_dstpts)    
+    homo = __solvehomo(masked_srcpts, masked_dstpts)    
     
     return homo, mask
+
+def perspectivetrans(image, M, dsize):
+    height = image.shape[0]
+    width = image.shape[1]
+    channels = image.shape[2]
+    new_height = dsize[0]
+    new_width = dsize[1]
     
+    trans_img = np.zeros((new_height, new_width, channels))
+    
+    invM = np.linalg.inv(M)
+    
+    for y in range(new_height):
+        for x in range(new_width):
+            invx, invy, __ = np.dot(invM, [x, y, 1])
+
+            left_nx = int(np.floor(invx))
+            down_ny = int(np.floor(invy))
+            right_nx = int(np.ceil(invx))
+            up_ny = int(np.ceil(invy))
+            
+            # nearest interpolation
+            if (0 <= left_nx < width and 0 <= right_nx < width and
+                0 <= down_ny < height and 0 <= up_ny < height):
+                
+                wx = invx - left_nx
+                if right_nx != left_nx:
+                    wx /= (right_nx - left_nx)
+                wy = invy - down_ny
+                if up_ny != down_ny:
+                    wy /= (up_ny - down_ny)
+                    
+                interp = image[down_ny, left_nx, :] * (1.0 - wx) * (1.0 - wy)
+                interp += image[up_ny, left_nx, :] * (1.0 - wx) * wy
+                interp += image[down_ny, right_nx, :] * wx * (1.0 - wy)
+                interp += image[up_ny, right_nx, :] * wx * wy
+                
+                trans_img[y, x, :] = interp
+        
+    return np.array(trans_img, dtype=np.uint8)
 
 def __homoransac(src_pts, dst_pts, iter_cnts, threshold):
     '''
@@ -152,5 +191,4 @@ def __randindicies(start, stop, count):
     
     return indicies;
       
-    
  
