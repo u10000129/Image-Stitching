@@ -6,5 +6,5 @@
 
 
 ## How to use seam filling
-see code/tutorial_fill.html
+see `code/tutorial_fill.html`
 
