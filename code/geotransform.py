@@ -3,15 +3,65 @@ import itertools
 import random
 
 def homograpghy(src_pts, dst_pts, threshold):
-    
-    prob = 0.25
+
+    prob = 0.5
     prob = 1 - np.power(prob, 4)
     confident_level = 0.95
     iter_cnts = int(np.ceil(np.log(1 - confident_level) / np.log(prob)))
     
-    return __homoransac(src_pts, dst_pts, iter_cnts, threshold)
+    homo, mask = __homoransac(src_pts, dst_pts, iter_cnts, threshold)
     
+    masked_srcpts = []
+    masked_dstpts = []
     
+    for i in range(len(src_pts)):
+        if mask[i] > 0:
+            masked_srcpts.append(src_pts[i])
+            masked_dstpts.append(dst_pts[i])
+
+    homo = __solvehomo(masked_srcpts, masked_dstpts)    
+    
+    return homo, mask
+
+def perspectivetrans(image, M, dsize):
+    height = image.shape[0]
+    width = image.shape[1]
+    channels = image.shape[2]
+    new_height = dsize[0]
+    new_width = dsize[1]
+    
+    trans_img = np.zeros((new_height, new_width, channels))
+    
+    invM = np.linalg.inv(M)
+    
+    for y in range(new_height):
+        for x in range(new_width):
+            invx, invy, __ = np.dot(invM, [x, y, 1])
+
+            left_nx = int(np.floor(invx))
+            down_ny = int(np.floor(invy))
+            right_nx = int(np.ceil(invx))
+            up_ny = int(np.ceil(invy))
+            
+            # nearest interpolation
+            if (0 <= left_nx < width and 0 <= right_nx < width and
+                0 <= down_ny < height and 0 <= up_ny < height):
+                
+                wx = invx - left_nx
+                if right_nx != left_nx:
+                    wx /= (right_nx - left_nx)
+                wy = invy - down_ny
+                if up_ny != down_ny:
+                    wy /= (up_ny - down_ny)
+                    
+                interp = image[down_ny, left_nx, :] * (1.0 - wx) * (1.0 - wy)
+                interp += image[up_ny, left_nx, :] * (1.0 - wx) * wy
+                interp += image[down_ny, right_nx, :] * wx * (1.0 - wy)
+                interp += image[up_ny, right_nx, :] * wx * wy
+                
+                trans_img[y, x, :] = interp
+        
+    return np.array(trans_img, dtype=np.uint8)
 
 def __homoransac(src_pts, dst_pts, iter_cnts, threshold):
     '''
@@ -34,6 +84,7 @@ def __homoransac(src_pts, dst_pts, iter_cnts, threshold):
             
             #print(subset_size)
             if subset_size > max_subset_size:
+                max_subset_size = subset_size
                 best_mask = mask
                 best_homo = homo
     
@@ -61,7 +112,7 @@ def __isgeoconstraint(src_pts, dst_pts):
 def __solvehomo(src_pts, dst_pts):
     counts = len(src_pts)
     
-    eqs = np.zeros((counts, 9))
+    eqs = np.zeros((counts * 2, 9))
     
     for i in range(0, len(eqs), 2):
         j = int(i / 2)
@@ -86,8 +137,11 @@ def __solvehomo(src_pts, dst_pts):
         eqs[i+1][7] = -1 * ybar * y
         eqs[i+1][8] = -1 * ybar
     
-    __, __, v = np.linalg.svd(eqs)
-        
+    #print(eqs)
+    u, s, v = np.linalg.svd(eqs)
+
+    #v = v.T
+    #print(s, s.shape, u.shape, eqs.shape)
     homo = v[-1,:] / v[-1,-1]
     homo = homo.reshape(3, 3)
     
@@ -101,11 +155,13 @@ def __homoquality(homo, src_pts, dst_pts, threshold):
     for i in range(counts):
         x, y = src_pts[i]
         dstx, dsty = dst_pts[i]
-        tx, ty, __ = np.dot(homo, [x, y, 1])
+        tx, ty, k = np.dot(homo, [x, y, 1])
+        #tx = tx / k
+        #ty = ty / k
         dist = np.linalg.norm([dstx - tx, dsty - ty], 2)
-        #print([dstx, dsty] + [tx, ty])
         if (dist < threshold):
-            mask = 1
+            mask[i] = 1
+            
 
     return np.sum(mask), mask
         
@@ -135,5 +191,4 @@ def __randindicies(start, stop, count):
     
     return indicies;
       
-    
  
