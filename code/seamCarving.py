@@ -25,8 +25,6 @@ def fill(im, iter=50):
         candidates = [_max([end - beg for beg, end in edge[i]])
                       for i in [UP, DN, LT, RT]]
         win = np.argmax(candidates)
-        arg = np.argmax([end - beg for beg, end in edge[win]])
-        beg, end = edge[win][arg]
         if win == UP:
             im = fill_up(im, 0, W)
         elif win == DN:
@@ -153,15 +151,12 @@ def energy(I):
         dy = np.transpose(dx)
         return np.abs(cv2.filter2D(grey, -1, dx)) + \
             np.abs(cv2.filter2D(grey, -1, dy))
-
-    I = blur = cv2.GaussianBlur(I, (5, 5), 0)
-    num_channel = I.shape[2] if len(I.shape) == 3 else 1
+    blur = cv2.GaussianBlur(I, (3, 3), 0)
+    I = I - 0.2*blur
+    num_channel = 3
     E = np.zeros(I.shape[:-1])
-    if num_channel == 1:
-        E = energy_grey(I)
-    else:
-        for x in [I[:, :, c] for c in range(num_channel)]:
-            E += energy_grey(x)
+    for x in [I[:, :, c] for c in range(num_channel)]:
+        E += energy_grey(x)
     return E
 
 
@@ -186,7 +181,7 @@ def optimalSeam(E):
     UR = 2  # upper right
     M = np.zeros(E.shape)
     M = np.pad(M, ((0, 0), (1, 1)), mode='constant',
-               constant_values=np.finfo(np.float32).max)
+               constant_values=1e12)
     D = np.zeros(M.shape)
     # assign 1st row
     M[0, 1:-1] = E[0, :]
