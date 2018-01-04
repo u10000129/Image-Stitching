@@ -235,3 +235,4 @@ def seamFilling(im, seam, is_vertical=True):
             _im[seam[j][1], j, :] = im[seam[j][1], j, :]
             _im[seam[j][1] + 1:, j, :] = im[seam[j][1]:, j, :]
     return _im
+
