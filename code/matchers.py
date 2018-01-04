@@ -1,4 +1,6 @@
 import cv2
+import math
+import copy
 import numpy as np 
 
 class matchers:
@@ -33,6 +35,15 @@ class matchers:
             matchedPointsPrev = np.float32(
                 [pointsPrevious[i].pt for (i, __) in good]
             )
+            
+            # img1 = copy.deepcopy(i1)
+            # img2 = copy.deepcopy(i2)
+            # for i in range(matchedPointsCurrent.shape[0]):
+                # cv2.circle(img2, (math.floor(matchedPointsCurrent[i][0]), math.floor(matchedPointsCurrent[i][1])), 2, (0,0,255), -1)
+                # cv2.circle(img1, (math.floor(matchedPointsPrev[i][0]), math.floor(matchedPointsPrev[i][1])), 2, (0,0,255), -1)
+            # cv2.imshow("img2", img2)
+            # cv2.imshow("img1", img1)
+            # cv2.waitKey()
 
             H, s = cv2.findHomography(matchedPointsCurrent, matchedPointsPrev, cv2.RANSAC, 4)
             return H
