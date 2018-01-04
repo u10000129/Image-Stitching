@@ -4,7 +4,7 @@ import sys
 from matchers import matchers
 import time
 import math
-import seamFilling
+import seamCarving as sc
 import imutils
 import utils
 
@@ -124,18 +124,12 @@ if __name__ == '__main__':
     s.rightshift()
     print ("done")
     result = s.leftImage
-    # cv2.imshow("result", result)
-    cv2.waitKey()
+    # result = cv2.imread("stitching-result.jpg")
     result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
-    result = utils.im2float(result)
     result = imutils.resize(result, width=400)
-    result = seamFilling.fill_left(result, [50, 350], k=40)
-    result = seamFilling.fill_up(result, [50, 100], k=40)
-    result = seamFilling.fill_down(result, [50, 100], k=40)
-    result = utils.float2im(result)
+    result = sc.preprocess(result)
+    result = sc.fill(result, iter=500)
     result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-    # cv2.imshow("result", result)
-    cv2.waitKey()
     cv2.imwrite("test.jpg", result)
     print ("image written")
     cv2.destroyAllWindows()
