@@ -4,10 +4,10 @@ import random
 
 def homograpghy(src_pts, dst_pts, threshold):
 
-    prob = 0.5
+    prob = 0.2
     prob = 1 - np.power(prob, 4)
     confident_level = 0.95
-    iter_cnts = int(np.ceil(np.log(1 - confident_level) / np.log(prob)))
+    iter_cnts = int(np.ceil(np.log(1 - confident_level) / np.log(prob) * 2))
     
     homo, mask = __homoransac(src_pts, dst_pts, iter_cnts, threshold)
     
@@ -27,16 +27,39 @@ def perspectivetrans(image, M, dsize):
     height = image.shape[0]
     width = image.shape[1]
     channels = image.shape[2]
-    new_height = dsize[0]
-    new_width = dsize[1]
-    
+    new_height = dsize[1]
+    new_width = dsize[0]
+    #print(dsize)
     trans_img = np.zeros((new_height, new_width, channels))
     
     invM = np.linalg.inv(M)
     
-    for y in range(new_height):
-        for x in range(new_width):
-            invx, invy, __ = np.dot(invM, [x, y, 1])
+    tlx, tly, tlk = np.dot(M, [0, height, 1])
+    tlx /= tlk
+    tly /= tlk
+    trx, trgy, trk = np.dot(M, [width, height, 1])
+    trx /= trk
+    trgy / trk
+    dlx, dly, dlk = np.dot(M, [0, 0, 1])
+    dlx /= dlk
+    dly /= dlk
+    drx, dry, drk = np.dot(M, [width, 0, 1])
+    drx /= drk
+    dry /= drk
+    min_x = min(tlx, trx, dlx, drx)
+    min_x = max(0, int(min_x))
+    max_x = max(tlx, trx, dlx, drx)
+    max_x = min(new_width, int(max_x))
+    min_y = min(tly, trgy, dly, dry)
+    min_y = max(0, int(min_y))
+    max_y = max(tly, trgy, dly, dry)
+    max_y = min(new_height, int(max_y))
+    
+    for y in range(min_y, max_y):
+        for x in range(min_x, max_x):
+            invx, invy, k = np.dot(invM, [x, y, 1])
+            invx = invx / k
+            invy = invy / k
 
             left_nx = int(np.floor(invx))
             down_ny = int(np.floor(invy))
@@ -44,8 +67,8 @@ def perspectivetrans(image, M, dsize):
             up_ny = int(np.ceil(invy))
             
             # nearest interpolation
-            if (0 <= left_nx < width and 0 <= right_nx < width and
-                0 <= down_ny < height and 0 <= up_ny < height):
+            if (0 <= left_nx and right_nx < width and
+                0 <= down_ny and up_ny < height):
                 
                 wx = invx - left_nx
                 if right_nx != left_nx:

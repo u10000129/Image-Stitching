@@ -1,7 +1,8 @@
 import cv2
 import math
 import copy
-import numpy as np 
+import numpy as np
+import geotransform as gt
 
 class matchers:
     def __init__(self):
@@ -45,7 +46,8 @@ class matchers:
             # cv2.imshow("img1", img1)
             # cv2.waitKey()
 
-            H, s = cv2.findHomography(matchedPointsCurrent, matchedPointsPrev, cv2.RANSAC, 4)
+            #H, s = cv2.findHomography(matchedPointsCurrent, matchedPointsPrev, cv2.RANSAC, 4)
+            H, s = gt.homograpghy(matchedPointsCurrent, matchedPointsPrev, 4)
             return H
         return None
 
