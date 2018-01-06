@@ -7,6 +7,7 @@ import math
 import seamCarving as sc
 import imutils
 import utils
+import poissonblending as p_b
 
 class Stitch:
     def __init__(self, args):
@@ -56,7 +57,16 @@ class Stitch:
             d_y = max(b.shape[0], math.ceil(lb[1]), math.ceil(ds[1]))
             dsize = (offsetx + b.shape[1], offsety + d_y)
             tmp = cv2.warpPerspective(a, xh, dsize, flags = cv2.INTER_CUBIC)
-            tmp[offsety:b.shape[0]+offsety, offsetx:b.shape[1]+offsetx] = b
+            
+            # Poisson-blending
+            mask = cv2.warpPerspective(np.ones(a.shape, dtype=np.uint8)*255, xh, dsize, flags = cv2.INTER_CUBIC)
+            mask[offsety:b.shape[0]+offsety, offsetx:b.shape[1]+offsetx] = np.zeros(b.shape, dtype=np.uint8)
+            blend_img = np.zeros(tmp.shape, dtype=np.uint8)
+            blend_img[offsety:b.shape[0]+offsety, offsetx:b.shape[1]+offsetx] = b
+            tmp = p_b.blend(blend_img, tmp, mask)
+            
+            # directly stitch
+            # tmp[offsety:b.shape[0]+offsety, offsetx:b.shape[1]+offsetx] = b
             a = tmp
 
         self.leftImage = tmp
@@ -74,7 +84,25 @@ class Stitch:
             ds = ds/ds[-1]
             dsize = (int(max(rt[0], ds[0])), int(max(lb[1], ds[1], self.leftImage.shape[0])))
             tmp = cv2.warpPerspective(each, H, dsize, flags = cv2.INTER_CUBIC)
-            tmp = self.mix_and_match(self.leftImage, tmp)
+            
+            # Poisson-blending
+            cv2.imwrite('left.jpg', self.leftImage)
+            c = self.leftImage.shape[1]-1
+            for i in range(0, self.leftImage.shape[0]-1):
+                if not np.array_equal(self.leftImage[i, c], np.array([0, 0, 0])):
+                    if np.array_equal(self.leftImage[i-1, c], np.array([0, 0, 0])):
+                        r1 = i
+                if not np.array_equal(self.leftImage[i, c], np.array([0, 0, 0])):
+                    if np.array_equal(self.leftImage[i+1, c], np.array([0, 0, 0])):
+                        r2 = i+1
+            mask = cv2.warpPerspective(np.ones(each.shape, dtype=np.uint8)*255, H, dsize, flags = cv2.INTER_CUBIC)
+            mask[r1:r2, :self.leftImage.shape[1]] = np.zeros((r2-r1, self.leftImage.shape[1], 3), dtype=np.uint8)
+            blend_img = np.zeros(tmp.shape, dtype=np.uint8)
+            blend_img[:self.leftImage.shape[0], :self.leftImage.shape[1]] = self.leftImage
+            tmp = p_b.blend(blend_img, tmp, mask)
+            
+            # directly stitch
+            # tmp = self.mix_and_match(self.leftImage, tmp)
             self.leftImage = tmp
 
     def mix_and_match(self, leftImage, warpedImage):
@@ -130,7 +158,7 @@ if __name__ == '__main__':
     result = sc.preprocess(result)
     result = sc.fill(result, iter=500)
     result = cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
-    cv2.imwrite("test.jpg", result)
+    cv2.imwrite("test-t.jpg", result)
     print ("image written")
     cv2.destroyAllWindows()
     
