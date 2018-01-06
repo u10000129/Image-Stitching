@@ -8,6 +8,7 @@ import seamCarving as sc
 import imutils
 import utils
 import poissonblending as p_b
+import geotransform as gt
 
 class Stitch:
     def __init__(self, args):
@@ -56,7 +57,8 @@ class Stitch:
                 offsety = math.ceil(abs(offsety))
             d_y = max(b.shape[0], math.ceil(lb[1]), math.ceil(ds[1]))
             dsize = (offsetx + b.shape[1], offsety + d_y)
-            tmp = cv2.warpPerspective(a, xh, dsize, flags = cv2.INTER_CUBIC)
+            # tmp = cv2.warpPerspective(a, xh, dsize, flags = cv2.INTER_CUBIC)
+            tmp = gt.perspectivetrans(a, xh, dsize)
             
             # Poisson-blending
             mask = cv2.warpPerspective(np.ones(a.shape, dtype=np.uint8)*255, xh, dsize, flags = cv2.INTER_CUBIC)
@@ -83,7 +85,8 @@ class Stitch:
             ds = np.dot(H, np.array([each.shape[1], each.shape[0], 1])) # right bottom
             ds = ds/ds[-1]
             dsize = (int(max(rt[0], ds[0])), int(max(lb[1], ds[1], self.leftImage.shape[0])))
-            tmp = cv2.warpPerspective(each, H, dsize, flags = cv2.INTER_CUBIC)
+            # tmp = cv2.warpPerspective(each, H, dsize, flags = cv2.INTER_CUBIC)
+            tmp = gt.perspectivetrans(each, H, dsize)
             
             # Poisson-blending
             cv2.imwrite('left.jpg', self.leftImage)
@@ -161,4 +164,3 @@ if __name__ == '__main__':
     cv2.imwrite("test-t.jpg", result)
     print ("image written")
     cv2.destroyAllWindows()
-    
