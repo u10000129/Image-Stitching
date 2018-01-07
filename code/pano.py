@@ -62,10 +62,20 @@ class Stitch:
             
             # Poisson-blending
             mask = cv2.warpPerspective(np.ones(a.shape, dtype=np.uint8)*255, xh, dsize, flags = cv2.INTER_CUBIC)
-            mask[offsety:b.shape[0]+offsety, offsetx:b.shape[1]+offsetx] = np.zeros(b.shape, dtype=np.uint8)
+            mask[offsety:b.shape[0]+offsety, offsetx+10:b.shape[1]+offsetx] = np.zeros((b.shape[0], b.shape[1]-10, 3), dtype=np.uint8)
+            # cv2.imwrite('mask.jpg', mask)
             blend_img = np.zeros(tmp.shape, dtype=np.uint8)
             blend_img[offsety:b.shape[0]+offsety, offsetx:b.shape[1]+offsetx] = b
+            black_mask = np.zeros(tmp.shape, dtype=np.uint8)
+            for i in range(0, tmp.shape[0]):
+                for j in range(0, tmp.shape[1]):
+                    if (not np.array_equal(tmp[i, j], np.array([0, 0, 0]))) or (not np.array_equal(blend_img[i, j], np.array([0, 0, 0]))):
+                        black_mask[i, j] = (1, 1, 1);
             tmp = p_b.blend(blend_img, tmp, mask)
+            for i in range(0, tmp.shape[0]):
+                for j in range(0, tmp.shape[1]):
+                    if np.array_equal(black_mask[i, j], np.array([0, 0, 0])):
+                        tmp[i, j] = (0, 0, 0);
             
             # directly stitch
             # tmp[offsety:b.shape[0]+offsety, offsetx:b.shape[1]+offsetx] = b
@@ -89,7 +99,6 @@ class Stitch:
             tmp = gt.perspectivetrans(each, H, dsize)
             
             # Poisson-blending
-            cv2.imwrite('left.jpg', self.leftImage)
             c = self.leftImage.shape[1]-1
             for i in range(0, self.leftImage.shape[0]-1):
                 if not np.array_equal(self.leftImage[i, c], np.array([0, 0, 0])):
@@ -102,7 +111,16 @@ class Stitch:
             mask[r1:r2, :self.leftImage.shape[1]] = np.zeros((r2-r1, self.leftImage.shape[1], 3), dtype=np.uint8)
             blend_img = np.zeros(tmp.shape, dtype=np.uint8)
             blend_img[:self.leftImage.shape[0], :self.leftImage.shape[1]] = self.leftImage
+            black_mask = np.zeros(tmp.shape, dtype=np.uint8)
+            for i in range(0, tmp.shape[0]):
+                for j in range(0, tmp.shape[1]):
+                    if (not np.array_equal(tmp[i, j], np.array([0, 0, 0]))) or (not np.array_equal(blend_img[i, j], np.array([0, 0, 0]))):
+                        black_mask[i, j] = (1, 1, 1);
             tmp = p_b.blend(blend_img, tmp, mask)
+            for i in range(0, tmp.shape[0]):
+                for j in range(0, tmp.shape[1]):
+                    if np.array_equal(black_mask[i, j], np.array([0, 0, 0])):
+                        tmp[i, j] = (0, 0, 0);
             
             # directly stitch
             # tmp = self.mix_and_match(self.leftImage, tmp)
@@ -146,7 +164,7 @@ if __name__ == '__main__':
     try:
         args = sys.argv[1]
     except:
-        args = "txtlists/files2.txt"
+        args = "txtlists/files3.txt"
     finally:
         print ("Parameters : ", args)
     s = Stitch(args)
@@ -155,7 +173,8 @@ if __name__ == '__main__':
     s.rightshift()
     print ("done")
     result = s.leftImage
-    # result = cv2.imread("stitching-result.jpg")
+    # result = cv2.imread('file3-result.jpg')
+    # cv2.imwrite('file3-result.jpg', result)
     result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
     result = imutils.resize(result, width=400)
     result = sc.preprocess(result)
