@@ -4,7 +4,7 @@ import time
 import copy
 
 
-def fill(im, iter=50):
+def fill(im, iter=50, bound=None):
     def _max(L):
         x = 0
         for y in L:
@@ -26,13 +26,13 @@ def fill(im, iter=50):
                       for i in [UP, DN, LT, RT]]
         win = np.argmax(candidates)
         if win == UP:
-            im = fill_up(im, 0, W)
+            im = fill_up(im, 0, W, bound)
         elif win == DN:
-            im = fill_down(im, 0, W)
+            im = fill_down(im, 0, W, bound)
         elif win == LT:
-            im = fill_left(im, 0, H)
+            im = fill_left(im, 0, H, bound)
         elif win == RT:
-            im = fill_right(im, 0, H)
+            im = fill_right(im, 0, H, bound)
         cnt += 1
         if cnt % 10 == 0:
             print('filling step:', cnt)
@@ -40,39 +40,82 @@ def fill(im, iter=50):
     return im
 
 
-def fill_up(im, beg, end):
+def fill_up(im, beg, end, bound=None):
     im = copy.deepcopy(im)
-    _im = im[:, beg:end, :]
+    if bound:
+        up_bound = bound[0]
+        low_bound = bound[1]
+    else:
+        up_bound = 0
+        low_bound = im.shape[0]
+    _im = im[up_bound:low_bound, beg:end, :]
     s, m = optimalSeam(np.transpose(energy_with_penalty(_im)))
     _im = seamFilling(_im, s, is_vertical=False)
-    im[:, beg:end, :] = _im[1:, :, :]
+    if bound:
+        # shift up 1 pixel
+        im[:up_bound-1, :, :] = im[1:up_bound, :, :]
+        im[up_bound-1:low_bound, beg:end, :] = _im
+    else:
+        im[:, beg:end, :] = _im[1:, :, :]
     return im
 
 
-def fill_down(im, beg, end):
+def fill_down(im, beg, end, bound=None):
     im = copy.deepcopy(im)
-    _im = im[:, beg:end, :]
+    if bound:
+        up_bound = bound[0]
+        low_bound = bound[1]
+    else:
+        up_bound = 0
+        low_bound = im.shape[0]
+    _im = im[up_bound:low_bound, beg:end, :]
     s, m = optimalSeam(np.transpose(energy_with_penalty(_im)))
     _im = seamFilling(_im, s, is_vertical=False)
-    im[:, beg:end, :] = _im[:-1, :, :]
+    if bound:
+        # shift down 1 pixel
+        im[low_bound+1:, :, :] = im[low_bound:-1, :, :]
+        im[up_bound:low_bound+1, beg:end, :] = _im
+    else:
+        im[:, beg:end, :] = _im[:-1, :, :]
     return im
 
 
-def fill_left(im, beg, end):
+def fill_left(im, beg, end, bound=None):
     im = copy.deepcopy(im)
-    _im = im[beg:end, :, :]
+    if bound:
+        left_bound = bound[2]
+        right_bound = bound[3]
+    else:
+        left_bound = 0
+        right_bound = im.shape[1]
+    _im = im[beg:end, left_bound:right_bound, :]
     s, m = optimalSeam(energy_with_penalty(_im))
     _im = seamFilling(_im, s, is_vertical=True)
-    im[beg:end, :, :] = _im[:, 1:, :]
+    if bound:
+        im[:, :left_bound-1, :] = im[:, 1:left_bound, :]
+        im[beg:end, left_bound-1:right_bound, :] = _im
+    else:    
+        im[beg:end, :, :] = _im[:, 1:, :]
     return im
 
 
-def fill_right(im, beg, end):
+def fill_right(im, beg, end, bound=None):
     im = copy.deepcopy(im)
-    _im = im[beg:end, :, :]
+    if bound:
+        left_bound = bound[2]
+        right_bound = bound[3]
+    else:
+        left_bound = 0
+        right_bound = im.shape[1]
+    _im = im[beg:end, left_bound:right_bound, :]
     s, m = optimalSeam(energy_with_penalty(_im))
     _im = seamFilling(_im, s, is_vertical=True)
-    im[beg:end, :, :] = _im[:, :-1, :]
+    if bound:
+        im[:, right_bound+1:, :] = im[:, right_bound:-1, :]
+        im[beg:end, left_bound:right_bound+1, :] = _im
+    else:    
+        im[beg:end, :, :] = _im[:, :-1, :]
+    
     return im
 
 
@@ -145,14 +188,18 @@ def energy(I):
     """ Calculate energy
     """
     def energy_grey(grey):
+        # dx = np.array([[1, 0, -1],
+        #                [2, 0, -2],
+        #                [1, 0, -1]])
         dx = np.array([[1, 0, -1],
-                       [2, 0, -2],
+                       [1, 0, -1],
                        [1, 0, -1]])
         dy = np.transpose(dx)
         return np.abs(cv2.filter2D(grey, -1, dx)) + \
             np.abs(cv2.filter2D(grey, -1, dy))
     blur = cv2.GaussianBlur(I, (3, 3), 0)
-    I = I - 0.2*blur
+    # I = I - 0.01*blur
+    I = blur
     num_channel = 3
     E = np.zeros(I.shape[:-1])
     for x in [I[:, :, c] for c in range(num_channel)]:
@@ -160,7 +207,7 @@ def energy(I):
     return E
 
 
-def energy_with_penalty(I, penalty=1e4):
+def energy_with_penalty(I, penalty=1e10):
     """ Calculate energy with penalty to black pixels
     """
     E = energy(I)
