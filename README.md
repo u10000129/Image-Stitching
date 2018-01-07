@@ -8,3 +8,16 @@
 ## How to use seam filling
 see `code/tutorial_fill.html`
 
+## stitching-result
+![alt text](https://github.com/u10000129/Image-Stitching/blob/master/code/stitching-result.jpg)
+
+## Possion-result
+![alt text](https://github.com/u10000129/Image-Stitching/blob/master/code/possion-result.jpg)
+
+## filling-without-Possion-blending
+![alt text](https://github.com/u10000129/Image-Stitching/blob/master/code/filling-without-blending.jpg)
+
+## filling-with-blending
+![alt text](https://github.com/u10000129/Image-Stitching/blob/master/code/filling-result.jpg)
+
+
